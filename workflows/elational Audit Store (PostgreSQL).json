@@ -1,0 +1,141 @@
+{
+  "name": "elational Audit Store (PostgreSQL)",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        0
+      ],
+      "id": "6557cdef-0a74-4f54-8772-be3683fdd68e",
+      "name": "Sub_Postgres_Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO customer_audit_logs (customer_id, email, issue_type, log_context, created_at)\nVALUES (\n  '{{ $json.c_id }}',\n  '{{ $json.c_email }}',\n  'LEGAL_COMPLAINT',\n  '{{ $json.c_text }}',\n  '{{ $json.c_date }}'\n)\nRETURNING id, customer_id, created_at;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "bba5cb24-5a2c-4198-a7a4-8aa1e8e4c7e2",
+      "name": "Postgres_Insert_Audit",
+      "credentials": {
+        "postgres": {
+          "id": "PguOgRYQgpUHEM8f",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n    return {\n        json: {\n            sub_system: \"POSTGRES_RELATIONAL_AUDIT\",\n            status: \"SUCCESS\",\n            database_record_id: item.json.id || \"MOCK_DB_ID_\" + Math.floor(Math.random() * 1000),\n            message: \"Storicizzazione transazionale completata con successo su PostgreSQL.\",\n            timestamp: new Date().toISOString()\n        }\n    };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "75e7058f-9afd-4034-a294-ffec071c2c51",
+      "name": "Format_Postgres_Output"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c7b3b2b5-600f-4b4a-9156-77cc49515560",
+              "name": "c_id",
+              "value": "={{ $json.metadata?.customer_id || \"MV-4412\" }}",
+              "type": "string"
+            },
+            {
+              "id": "d1446f92-7db9-4c14-9127-51d37e72c151",
+              "name": "c_email",
+              "value": "={{ $json.metadata?.customer_email || \"direzione.bologna@motorvalley-hub.it\" }}",
+              "type": "string"
+            },
+            {
+              "id": "0968d57f-f2af-402a-b175-5cba235852fe",
+              "name": "c_text",
+              "value": "={{ $json.payload?.text_clean || \"Contestazione rilevata.\" }}",
+              "type": "string"
+            },
+            {
+              "id": "0c17257a-2135-49bf-9f95-31635505e5df",
+              "name": "c_date",
+              "value": "={{ $json.metadata?.ingested_at || \"2026-09-07T17:19:33Z\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        0
+      ],
+      "id": "34959e11-4cec-4d24-8c00-d243cf1f18bd",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Sub_Postgres_Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres_Insert_Audit": {
+      "main": [
+        [
+          {
+            "node": "Format_Postgres_Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Postgres_Insert_Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "8fcd5b5c-e423-4dbc-8954-bed56f0e1695",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d4e800cc17066c8c4ebb7ba47cb71fd9dcaed8c182b49fe08b175055233bad32"
+  },
+  "id": "cIGJuxMfydPhvzvm",
+  "tags": []
+}

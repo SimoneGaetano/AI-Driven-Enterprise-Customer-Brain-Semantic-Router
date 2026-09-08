@@ -1,0 +1,154 @@
+{
+  "name": "NoSQL Document Store (MongoDB)",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        0
+      ],
+      "id": "897ee504-af14-4fc9-af73-fbd9f6951abe",
+      "name": "Sub_MongoDB_Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "commercial_leads",
+        "fields": "lead_id,contact_email,raw_request,sanitized_request,text_length,processed_at",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "16183c87-ba46-4ccf-a777-5b7ab2084ad5",
+      "name": "MongoDB_Insert_Lead",
+      "credentials": {
+        "mongoDb": {
+          "id": "g89tQlWL8SRvGFCA",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n    return {\n        json: {\n            sub_system: \"MONGODB_NOSQL_STORE\",\n            status: \"SUCCESS\",\n            message: \"Documento commerciale inserito fluidamente in MongoDB.\",\n            inserted_count: items.length,\n            timestamp: new Date().toISOString()\n        }\n    };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "c7da4d7f-87e1-4880-91aa-416c42d0aaea",
+      "name": "Format_MongoDB_Output"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1c51f24f-102c-4266-8978-f67814eefdf1",
+              "name": "lead_id",
+              "value": "=LEAD-{{ $('Sub_MongoDB_Trigger').item.json.metadata?.customer_id ? $('Sub_MongoDB_Trigger').item.json.metadata.customer_id : \"MV-1102\" }}",
+              "type": "string"
+            },
+            {
+              "id": "45412473-46b0-4172-b13e-5bf7afd293f1",
+              "name": "=contact_email",
+              "value": "={{ $('Sub_MongoDB_Trigger').item.json.metadata?.customer_email ? $('Sub_MongoDB_Trigger').item.json.metadata.customer_email : \"acquisti.imola@motorvalley-hub.it\" }}",
+              "type": "string"
+            },
+            {
+              "id": "0d3aa256-7ebb-4094-bd78-ec071e1d437e",
+              "name": "=raw_request",
+              "value": "={{ $('Sub_MongoDB_Trigger').item.json.payload?.text_original ? $('Sub_MongoDB_Trigger').item.json.payload.text_original : \"Richiesta commerciale.\" }}",
+              "type": "string"
+            },
+            {
+              "id": "0ba82ce0-c47e-45a3-b28c-30b851a1a8be",
+              "name": "=sanitized_request",
+              "value": "={{ $('Sub_MongoDB_Trigger').item.json.payload?.text_clean ? $('Sub_MongoDB_Trigger').item.json.payload.text_clean : \"Richiesta commerciale pulita.\" }}",
+              "type": "string"
+            },
+            {
+              "id": "2f9c8f37-6212-4f2a-bd05-40f5c86ef6a3",
+              "name": "=text_length",
+              "value": "={{ $('Sub_MongoDB_Trigger').item.json.metadata?.raw_text_length ? $('Sub_MongoDB_Trigger').item.json.metadata.raw_text_length : 150 }}",
+              "type": "string"
+            },
+            {
+              "id": "1c486ed6-139f-4dd9-863d-a49d5b00c506",
+              "name": "=processed_at",
+              "value": "={{ $('Sub_MongoDB_Trigger').item.json.metadata?.ingested_at ? $('Sub_MongoDB_Trigger').item.json.metadata.ingested_at : \"2026-09-07T15:32:20.392Z\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        0
+      ],
+      "id": "1536881e-09c7-4cf5-9e04-46c50ea36f32",
+      "name": "Prepare_Mongo_Data"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Sub_MongoDB_Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare_Mongo_Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB_Insert_Lead": {
+      "main": [
+        [
+          {
+            "node": "Format_MongoDB_Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare_Mongo_Data": {
+      "main": [
+        [
+          {
+            "node": "MongoDB_Insert_Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "37257f2d-4c39-47f3-94e6-99f4cba9acbc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d4e800cc17066c8c4ebb7ba47cb71fd9dcaed8c182b49fe08b175055233bad32"
+  },
+  "id": "Aso1NfZXht6QxNhR",
+  "tags": []
+}
