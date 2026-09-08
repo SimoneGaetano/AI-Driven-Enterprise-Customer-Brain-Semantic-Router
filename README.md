@@ -1,11 +1,10 @@
 # AI-Driven Enterprise Customer Brain & Semantic Router
-## AI-Driven Enterprise Customer Brain & Semantic Router
 
 Un'architettura backend a microservizi asincrona e disaccoppiata, sviluppata inizialmente in ambiente locale.
 
 Il sistema agisce come un AI Gateway in grado di acquisire comunicazioni non strutturate ad alto volume — come ticket tecnici, richieste legali e lead commerciali — analizzare l'intento dell'utente attraverso un Semantic Routing deterministico e orchestrare l'esecuzione downstream su molteplici database relazionali, NoSQL documentali e vettoriali semantici.
 
-🛠️ Stack Tecnologico & Architettura
+## 🛠️ Stack Tecnologico & Architettura
 Orchestratore / Backend: n8n (esecuzione self-hosted v1+, configurato per risposte sincrone)
 Database Relazionale: PostgreSQL 15 (persistenza dei dati e vincoli ACID per gli audit log legali)
 Database NoSQL: MongoDB 6 (persistenza documentale polimorfa per lead commerciali flessibili)
@@ -72,7 +71,7 @@ Un blocco finale di Data Lineage (Edit Fields) esegue un tracciamento della line
 
 Il report manageriale finale viene quindi inviato al client tramite il nodo Respond to Webhook, chiudendo la connessione.
 
-🔒 Sicurezza & Cybersecurity
+## 🔒 Sicurezza & Cybersecurity
 
 L'architettura garantisce l'isolamento perimetrale dei dati sensibili all'interno della rete chiusa di Docker.
 
@@ -86,7 +85,7 @@ Normalizza i tipi di dato.
 Previene errori relativi a timestamp o undefined.
 Gestisce chiamate parziali o payload corrotti provenienti dal client.
 Riduce il rischio di propagazione di dati malformati verso i database downstream.
-📈 Scalabilità & Analisi dei Costi — Local vs Cloud TCO
+## 📈 Scalabilità & Analisi dei Costi — Local vs Cloud TCO
 
 Il progetto è stato strutturato originariamente in ambiente locale tramite Docker per ottimizzare le risorse hardware e consentire una gestione dei test a budget zero.
 
@@ -114,7 +113,7 @@ Distribuito su un cluster Kubernetes.
 
 Il tutto senza dover modificare la logica del Router Semantico Padre.
 
-🛠️ Note Tecniche di Sviluppo
+## 🛠️ Note Tecniche di Sviluppo
 
 Durante lo sviluppo e il testing dell'infrastruttura sono state affrontate e risolte diverse criticità architetturali.
 
