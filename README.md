@@ -1,140 +1,66 @@
 # AI-Driven Enterprise Customer Brain & Semantic Router
-
-Un'architettura backend a microservizi asincrona e disaccoppiata, sviluppata inizialmente in ambiente locale.
-
-Il sistema agisce come un AI Gateway in grado di acquisire comunicazioni non strutturate ad alto volume — come ticket tecnici, richieste legali e lead commerciali — analizzare l'intento dell'utente attraverso un Semantic Routing deterministico e orchestrare l'esecuzione downstream su molteplici database relazionali, NoSQL documentali e vettoriali semantici.
+Una pipeline industriale di backend puro per l'ingestione, la classificazione semantica e l'orchestrazione asincrona multi-database sviluppata a budget zero in ambiente locale. Il sistema è progettato per intercettare flussi costanti di comunicazioni aziendali non strutturate (ticket tecnici complessi, reclami legali, lead commerciali), analizzarne l'intento tramite modelli LLM deterministici (Semantic Routing) e smistare il carico computazionale su tre sotto-pipeline disaccoppiate e indipendenti, restituendo un report manageriale sincrono.
 
 ## 🛠️ Stack Tecnologico & Architettura
-Orchestratore / Backend: n8n (esecuzione self-hosted v1+, configurato per risposte sincrone)
-Database Relazionale: PostgreSQL 15 (persistenza dei dati e vincoli ACID per gli audit log legali)
-Database NoSQL: MongoDB 6 (persistenza documentale polimorfa per lead commerciali flessibili)
-Database Vettoriale Semantico: Simple Vector Store In-Memory (motore RAG locale per il recupero contestuale)
-Engine IA & Embeddings: Groq Cloud API con modello llama-3.3-7b-versatile a Temperature = 0 per la classificazione rigida + OpenAI Embeddings text-embedding-3-small per la vettorizzazione semantica
-Infrastruttura: Docker Desktop (isolamento dei servizi e Docker Network bridge dedicata n8n-network)
-Database Clients: Beekeeper Studio (SQL inspection) & MongoDB Compass (NoSQL document inspection)
-🔄 Flusso Logico dei Dati
+*   **Orchestratore/Backend:** n8n (Esecuzione self-hosted in locale v1+)
+*   **Database Relazionale:** PostgreSQL 15 (Data persistence per vincoli ACID e audit log legali)
+*   **Database NoSQL:** MongoDB 6 (Persistenza documentale polimorfa per schemi commerciali flessibili)
+*   **Database Vettoriale:** Simple Vector Store (Motore RAG locale In-Memory per recupero contestuale)
+*   **Engine IA & Embeddings:** Groq Cloud API (Modello llama-3.3-7b-versatile) & OpenAI Embeddings
+*   **Ambiente d'Infrastruttura:** Docker Desktop (Isolamento dei servizi e Docker Network dedicata `n8n-network`)
+*   **Database Client:** Beekeeper Studio & MongoDB Compass (Data inspection e amministrazione schemi)
+*   **API Testing Client:** Postman (Simulazione client esterno e convalida delle risposte sincrone)
 
-Il sistema implementa un design pattern Hub-and-Spoke, strutturato in 4 macro-fasi sequenziali per ridurre il consumo di token e ottimizzare la context window.
+## 🔄 Flusso Logico dei Dati
+Il workflow gestisce un'architettura Hub-and-Spoke disaccoppiata tramite sotto-workflow indipendenti per ottimizzare la context window e abbattere i costi delle API:
 
-Fase 1 — Ingestione & Sanitizzazione (Padre)
+*   **Pipeline di Ingestione e Routing (Workflow Padre):** Production Webhook Trigger (Endpoint sincrono `v1/customer-brain-ingest` per mantenere attiva la connessione con il client) ➔ Code Node (Isolamento dei metadati e pre-sanitizzazione del testo) ➔ Groq API (Basic LLM Chain impostata a Temperature = 0 per una classificazione deterministica ad alta velocità) ➔ Switch Node (Intercettazione del codice categorico rigido `1`, `2` o `3` e deviazione immediata dell'impulso grafico).
+*   **Sub-Workflow A (Advanced AI RAG Engine):** Execute Workflow Trigger ➔ Tools Agent (Configurato senza memoria di chat per isolare il ticket) ➔ Simple Vector Store & OpenAI Embeddings (Interrogazione semantica sui manuali tecnici condivisi tramite Docker Volume) ➔ Code Node (Formattazione del report di fallback in caso di contesto non trovato).
+*   **Sub-Workflow B (Relational Database Audit):** Execute Workflow Trigger ➔ Edit Fields (Data Adapter per l'estrazione sicura e la tipizzazione delle variabili) ➔ PostgreSQL (Esecuzione di una query SQL nativa `INSERT INTO` all'interno della tabella `customer_audit_logs`).
+*   **Sub-Workflow C (NoSQL Document Store):** Execute Workflow Trigger ➔ Edit Fields (Normalizzazione dei campi commerciali) ➔ MongoDB (Inserimento fluido del documento JSON integro all'interno della collezione `commercial_leads`).
+*   **Pipeline di Consolidamento e Risposta (Finale):** Merge Node (Configurato in modalità `Append` con sblocco rapido su `Wait for Any Input` per evitare lo stallo dei rami spenti) ➔ Edit Fields (Tracciamento della linea temporale tramite puntatori storici espliciti per recuperare i metadati originari del Padre ed eliminare il payload spazzatura accumulato) ➔ Respond to Webhook (Rilascio immediato del report manageriale finale compilato in risposta sincrona verso Postman).
 
-L'endpoint HTTP Webhook_Enterprise_Ingest riceve il payload dal client e mantiene attiva la connessione sincrona.
+## 🧪 Interfaccia di Test & Integrazione API (Postman)
+L'infrastruttura è configurata per comportarsi come un vero microservizio BaaS (Backend as a Service). Per convalidare il routing semantico e la persistenza polimorfa, le chiamate vengono simulate tramite client Postman con i seguenti endpoint e payload strutturati:
 
-Il nodo JavaScript JS_Sanitize_and_Prepare:
+*   **Configurazione Richiesta Globale:**
+    *   **Metodo:** `POST`
+    *   **URL Produzione Locale:** `http://localhost:5678/webhook/v1/customer-brain-ingest`
+    *   **Headers:** `Content-Type: application/json`
 
-Isola i metadati dell'utente.
-Applica la sanitizzazione Regex per l'escaping degli apostrofi.
-Protegge l'infrastruttura da crash sintattici SQL.
-Fase 2 — Semantic Routing (Padre)
+*   **Payload di Test 1 (Ramo Assistenza Tecnica ➔ RAG Engine):**
+    ```json
+    {
+      "customer_id": "MV-9942",
+      "email": "logistica.modena@motorvalley-hub.it",
+      "text": "Buongiorno, l'impianto di automazione industriale ha riscontrato un blocco sul braccio meccanico custom dell'isola 3. L'albero di trasmissione ha un attrito anomalo. Abbiamo urgenza, verificate i manuali della macchina."
+    }
+    ```
+*   **Payload di Test 2 (Ramo Reclamo Legale ➔ PostgreSQL ACID Logs):**
+    ```json
+    {
+      "customer_id": "MV-4412",
+      "email": "direzione.bologna@motorvalley-hub.it",
+      "text": "Con la presente comunichiamo che, a causa del mancato rispetto dello SLA di consegna del software di automazione, i nostri legali procederanno a richiedere la penale contrattuale. Valuteremo vie legali se non riceviamo risposta entro 48 ore."
+    }
+    ```
+*   **Payload di Test 3 (Ramo Commerciale ➔ MongoDB NoSQL Store):**
+    ```json
+    {
+      "customer_id": "MV-1102",
+      "email": "acquisti.imola@motorvalley-hub.it",
+      "text": "Siamo interessati ad ampliare la nostra isola robotizzata con 2 nuovi bracci meccanici. Potete inviarci un preventivo commerciale per le licenze software aggiuntive e i costi di installazione?"
+    }
+    ```
 
-Il testo pulito viene analizzato da una Basic LLM Chain impostata a Temperature = 0, garantendo un comportamento deterministico.
+## 🔒 Considerazioni sulla Sicurezza & Cybersecurity
+Il perimetro infrastrutturale è isolato localmente all'interno della rete Docker, esponendo verso l'esterno solo l'endpoint del Webhook Padre che agisce da API Gateway centralizzato. A livello di sicurezza del dato, l'architettura implementa il pattern del *Data Adapter* intermedio (`Edit Fields`) prima delle persistente relazionali e NoSQL, fungendo da fail-safe strutturale: il sistema convalida e normalizza i tipi di dato, impedendo l'inserimento di valori `null` o `undefined` che provocherebbero il rollback forzato delle transazioni su PostgreSQL. Inoltre, il codice JavaScript centrale applica l'escaping preventivo degli apostrofi, neutralizzando anomalie sintattiche causate da stringhe non strutturate fornite dagli utenti.
 
-L'IA restituisce esclusivamente un codice categorico rigido:
+## 📈 Scalabilità & Analisi dei Costi (Local vs Cloud TCO)
+Progetto originariamente ingegnerizzato in locale per ottimizzazione delle risorse hardware e gestione dei database a budget zero.
 
-Codice	Categoria
-1	Assistenza
-2	Legale
-3	Commerciale
+*   **Analisi dei costi Cloud (VPS):** Per una messa in produzione aziendale capace di reggere flussi costanti, l'intera suite Docker (n8n + Postgres + Mongo) prevede la migrazione su una VPS Linux Dedicata (es. Aruba Cloud / Hetzner) a un costo stimato di ~12.00€/mese, abbattendo i costi computazionali dell'infrastruttura IA grazie alle API ad alte prestazioni di Groq.
+*   **Scalabilità Orizzontale:** Il design pattern basato su sotto-workflow indipendenti (Sub-Workflows) consente una scalabilità orizzontale nativa. In produzione, ogni singolo modulo di persistenza può essere spostato su istanze n8n separate o distribuito su nodi Worker dedicati (Queue Mode gestita via Redis) senza dover alterare o modificare la logica di routing del workflow centrale.
 
-Il codice viene intercettato da un nodo Switch che biforca fisicamente il flusso grafico su 3 rami indipendenti [riferimento Switch node criteria].
-
-Fase 3 — Orchestrazione dei Sub-Workflows Disaccoppiati
-
-Lo Switch aziona i nodi nativi Execute Workflow, invocando tre file .json indipendenti, ciascuno dotato di un proprio memory layout isolato.
-
-Sub-Workflow A — Advanced AI RAG Engine
-
-Un Tools Agent interroga il database vettoriale Simple Vector Store, alimentato da modelli di Embedding, per estrarre soluzioni dai manuali tecnici locali.
-
-Il sistema applica inoltre regole di protezione nel caso in cui il recupero semantico non restituisca alcun contesto utile.
-
-Sub-Workflow B — Relational Audit Store
-
-Un adattatore dati Edit Fields:
-
-Isola le variabili necessarie.
-Normalizza il payload.
-Inietta i log transazionali nella tabella PostgreSQL.
-Utilizza query SQL native protette.
-Sub-Workflow C — NoSQL Document Store
-
-Un adattatore dedicato:
-
-Mappa il payload commerciale.
-Mantiene la struttura JSON originale.
-Inserisce il documento all'interno della collezione MongoDB.
-Fase 4 — Consolidamento & Output Sincrono (Padre)
-
-I rami asincroni convergono in un nodo Merge configurato in modalità Append con sblocco immediato (Wait for Any Input).
-
-Un blocco finale di Data Lineage (Edit Fields) esegue un tracciamento della linea temporale del workflow, recuperando i metadati nativi del Padre tramite puntatori espliciti.
-
-Il report manageriale finale viene quindi inviato al client tramite il nodo Respond to Webhook, chiudendo la connessione.
-
-## 🔒 Sicurezza & Cybersecurity
-
-L'architettura garantisce l'isolamento perimetrale dei dati sensibili all'interno della rete chiusa di Docker.
-
-I sotto-workflow non accedono direttamente alla rete esterna, ma vengono attivati esclusivamente dall'orchestratore centrale (Hub), che agisce come API Gateway protetto.
-
-Il sistema implementa inoltre il pattern del Data Adapter intermedio (Edit Fields) prima della persistenza sui database relazionali e NoSQL.
-
-Questo componente funge da fail-safe architetturale:
-
-Normalizza i tipi di dato.
-Previene errori relativi a timestamp o undefined.
-Gestisce chiamate parziali o payload corrotti provenienti dal client.
-Riduce il rischio di propagazione di dati malformati verso i database downstream.
-## 📈 Scalabilità & Analisi dei Costi — Local vs Cloud TCO
-
-Il progetto è stato strutturato originariamente in ambiente locale tramite Docker per ottimizzare le risorse hardware e consentire una gestione dei test a budget zero.
-
-Analisi dei Costi Cloud — VPS / IaaS
-
-Per una produzione su larga scala capace di gestire flussi costanti di comunicazioni, l'intero stack:
-
-n8n
-PostgreSQL
-MongoDB
-
-può essere migrato su una VPS Linux dedicata (es. Aruba Cloud / Hetzner) a un costo stimato di circa 12,00 €/mese.
-
-L'utilizzo di modelli ad alte prestazioni tramite Groq Cloud permette inoltre di mantenere ottimizzati i costi computazionali dell'IA.
-
-Disaccoppiamento Orizzontale
-
-L'architettura modulare tramite Sub-Workflows consente una scalabilità orizzontale nativa.
-
-In produzione, ogni sotto-workflow può essere:
-
-Spostato su istanze n8n separate.
-Convertito in microservizi containerizzati.
-Distribuito su un cluster Kubernetes.
-
-Il tutto senza dover modificare la logica del Router Semantico Padre.
-
-## 🛠️ Note Tecniche di Sviluppo
-
-Durante lo sviluppo e il testing dell'infrastruttura sono state affrontate e risolte diverse criticità architetturali.
-
-1. Gestione dello Stallo Hardware nel Merge
-
-Nella prima release, il nodo Merge configurato in modalità Wait for All Inputs generava timeout permanenti a causa della natura mutuamente esclusiva dello Switch a monte.
-
-Lo Switch attivava infatti un solo ramo alla volta, impedendo al Merge di ricevere tutti gli input attesi.
-
-Soluzione:
-
-Il Merge è stato riconfigurato in modalità Append a sblocco rapido, consentendo al workflow di proseguire immediatamente con il singolo ramo attivo.
-
-2. Risoluzione del Data Leakage Transazionale
-
-A causa dello scope limitato della variabile locale $json in n8n v1+, i dati provenienti dai sotto-workflow non includevano correttamente i metadati di ingestione del Padre, generando valori vuoti o N/A.
-
-La criticità è stata superata:
-
-Bypassando la memoria relativa dell'ultimo nodo.
-Forzando l'orchestratore a eseguire un tracciamento storico esplicito dei nodi di origine.
-Recuperando i metadati originali del workflow Padre.
-Fondendo metadati e risposte provenienti dai database downstream.
-Generando un report manageriale unico e completo come output finale.
+## 👨‍💻 Note di Sviluppo
+Ho sviluppato questo terzo progetto per dimostrare una forte skill in ambito di architettura software di livello enterprise B2B: la transizione da automazioni monolitiche a sistemi disaccoppiati a microservizi orchestrati. Durante lo sviluppo locale su Docker ho dovuto combattere con un severo problema di stallo hardware (timeout permanenti) sul nodo Merge finale: n8n rimaneva appeso in modalità *Wait for All Inputs* perché lo Switch a monte attivava un solo ramo asincrono alla volta. Ho risolto il problema riconfigurando il Merge in modalità `Append` con sblocco sul primo dato utile in arrivo. Inoltre, ho affrontato e risolto un bug di data leakage (campi del report compilati come `N/A`) causato dallo scope locale della variabile `$json` in n8n v1+, che oscurava i metadati del Padre dopo l'esecuzione dei sotto-workflow; ho superato il blocco bypassando la memoria relativa dell'ultimo nodo e forzando l'orchestratore a eseguire un tracciamento storico esplicito dei nodi di origine per fondere metadati e risposte dei database in un unico report manageriale sincrono.
